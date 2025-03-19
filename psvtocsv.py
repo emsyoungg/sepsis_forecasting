@@ -37,7 +37,6 @@ class PSVToCSV:
         df.to_csv(output_file_path, index=False)  # Save as CSV
 
 
-# Example usage:
 if __name__ == "__main__":
     input_directory = "C:/Users/emily/Documents/training/training_setA"
     output_directory = "C:/Users/emily/Documents/training/training_setA_csv"

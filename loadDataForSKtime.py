@@ -35,8 +35,7 @@ class PatientTimeSeriesLoader:
 
             df["Patient_ID"] = i
             # change missing data fill method here
-            df.fillna(method='ffill', inplace=True)
-            df.fillna(method='bfill', inplace=True)
+            df = df.ffill().bfill()
 
             df_list.append(df)
 
@@ -72,12 +71,16 @@ class PatientTimeSeriesLoader:
 
         return train_data, test_data
 
+    def subset_data(self, train_data, test_data, max_patient_id):
+        """
+        Restricts training and testing data to a subset of patients so can run quicker
 
+        Args:
+            max_patient_id (int): Maximum patient ID to include in the subset.
+        """
+        train_data_subset = train_data.loc[train_data.index.get_level_values("Patient_ID") < max_patient_id]
+        test_data_subset = test_data.loc[test_data.index.get_level_values("Patient_ID") < max_patient_id]
+        print(train_data_subset.index)
+        print(test_data_subset.index)
 
-
-
-loader = PatientTimeSeriesLoader("C:/Users/emily/Documents/DissertationProject/training/training_setA_csv")
-sktime_df = loader.load_data()
-train_data, test_data = loader.split_train_test(sktime_df)
-print(train_data.index)
-print(test_data.index)
+        return train_data_subset, test_data_subset
