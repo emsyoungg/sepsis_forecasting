@@ -1,6 +1,10 @@
+from pandas import isnull
 from sktime.forecasting.arima import AutoARIMA
 from sktime.forecasting.base import ForecastingHorizon
 import matplotlib.pyplot as plt
+import pandas as pd
+from sklearn.metrics import mean_absolute_error, mean_squared_error
+import numpy as np
 
 
 class ARIMAForecaster:
@@ -35,6 +39,7 @@ class ARIMAForecaster:
         Fits the AutoARIMA model to the variable to forecasts data in the training dataset.
         """
         sktime_var = self.train_data[[self.variable_to_forecast]]
+        print(sktime_var)
         self.forecaster.fit(sktime_var)
 
     def predict(self, steps=6):
@@ -62,7 +67,8 @@ class ARIMAForecaster:
 
         # patient to visualise
         patient_predictions = forecasts.loc[patient_id]
-        patient_data = self.test_data.loc[patient_id]
+        patient_data_combined = pd.concat([self.train_data, self.test_data], axis=0)
+        patient_data = patient_data_combined.loc[patient_id]
         patient_data_var = patient_data[self.variable_to_forecast]
 
         plt.figure(figsize=(10, 6))
@@ -76,3 +82,31 @@ class ARIMAForecaster:
         plt.legend()
         plt.grid(True)
         plt.show()
+
+    def evaluate_model(self, predicted_values):
+
+        print(predicted_values.isna().sum())  # Shows count of NaNs per column
+
+        actual_values = self.test_data[self.variable_to_forecast]
+        actual_values.set_index(predicted_values.index, inplace=True)
+
+        print(actual_values.isna().sum())
+
+        # Calculate error metrics
+        mae = mean_absolute_error(actual_values, predicted_values)
+        mse = mean_squared_error(actual_values, predicted_values)
+        rmse = np.sqrt(mse)
+
+        # Calculate MAPE (Mean Absolute Percentage Error) for accuracy
+        mape = np.mean(np.abs((actual_values - predicted_values) / actual_values)) * 100
+        accuracy = 100 - mape  # Accuracy derived from MAPE
+
+        # Print results
+        print(f"Model Evaluation Results:\n"
+              f"  - Mean Absolute Error (MAE): {mae:.4f}\n"
+              f"  - Mean Squared Error (MSE): {mse:.4f}\n"
+              f"  - Root Mean Squared Error (RMSE): {rmse:.4f}\n"
+              f"  - Mean Absolute Percentage Error (MAPE): {mape:.2f}%\n"
+              f"  - Forecasting Accuracy: {accuracy:.2f}%")
+
+        return {"MAE": mae, "MSE": mse, "RMSE": rmse, "MAPE": mape, "Accuracy": accuracy}

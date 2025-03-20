@@ -1,4 +1,4 @@
 sktime
-numpy
+numpy==1.23.5
 pmdarima
-matplotlib
+matplotlib==3.7.3
