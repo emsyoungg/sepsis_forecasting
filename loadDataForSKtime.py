@@ -35,6 +35,8 @@ class PatientTimeSeriesLoader:
 
             df["Patient_ID"] = i
             # change missing data fill method here
+            #df = df.dropna(axis=1, how='all')
+
             df = df.ffill().bfill()
 
             df_list.append(df)
