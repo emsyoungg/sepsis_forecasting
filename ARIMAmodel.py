@@ -38,9 +38,9 @@ class ARIMAForecaster:
         """
         Fits the AutoARIMA model to the variable to forecasts data in the training dataset.
         """
-        sktime_var = self.train_data[[self.variable_to_forecast]]
-        print(sktime_var)
-        self.forecaster.fit(sktime_var)
+        #sktime_var = self.train_data[[self.variable_to_forecast]]
+        #print(sktime_var)
+        self.forecaster.fit(self.train_data)
 
     def predict(self, steps=6):
         """
@@ -84,55 +84,28 @@ class ARIMAForecaster:
         plt.show()
 
     def evaluate_model(self, predicted_values):
-        """
-        Evaluates forecast performance using MAE, MSE, RMSE, MAPE, and Accuracy.
-        Assumes predicted_values and self.test_data have the same MultiIndex.
-        """
-        # Extract actual values for the variable to forecast
-        try:
-            actual_values = self.test_data[self.variable_to_forecast]
-        except KeyError:
-            raise KeyError(
-                f"'{self.variable_to_forecast}' not found in test data columns: {self.test_data.columns.tolist()}")
+        #print(predicted_values.isna().sum())  # Shows count of NaNs per column
 
-        # Align indices (should be the same, but just in case)
-        actual_values = actual_values.sort_index()
-        predicted_values = predicted_values.sort_index()
+        actual_values = self.test_data
 
-        # Filter to common index and drop NaNs
-        common_index = actual_values.index.intersection(predicted_values.index)
-        actual_values = actual_values.loc[common_index]
-        predicted_values = predicted_values.loc[common_index]
+        #print(actual_values.isna().sum())
 
-        # Remove any remaining NaNs
-        mask = actual_values.notna() & predicted_values.notna()
-        actual_values = actual_values[mask]
-        predicted_values = predicted_values[mask]
-
-        if actual_values.empty:
-            print("⚠️ No valid data points to evaluate.")
-            return None
-
-        # Evaluation metrics
+        # Calculate error metrics
         mae = mean_absolute_error(actual_values, predicted_values)
         mse = mean_squared_error(actual_values, predicted_values)
         rmse = np.sqrt(mse)
+
+        # Calculate MAPE (Mean Absolute Percentage Error) for accuracy
         mape = np.mean(np.abs((actual_values - predicted_values) / actual_values)) * 100
-        accuracy = 100 - mape
+        accuracy = 100 - mape  # Accuracy derived from MAPE
 
-        # Output
-        print(f"✅ Model Evaluation Results:")
-        print(f"  - MAE:     {mae:.4f}")
-        print(f"  - MSE:     {mse:.4f}")
-        print(f"  - RMSE:    {rmse:.4f}")
-        print(f"  - MAPE:    {mape:.2f}%")
-        print(f"  - Accuracy:{accuracy:.2f}%")
+        # Print results
+        print(f"Model Evaluation Results:\n"
+              f"  - Mean Absolute Error (MAE): {mae:.4f}\n"
+              f"  - Mean Squared Error (MSE): {mse:.4f}\n"
+              f"  - Root Mean Squared Error (RMSE): {rmse:.4f}\n"
+              f"  - Mean Absolute Percentage Error (MAPE): {mape:.2f}%\n"
+              f"  - Forecasting Accuracy: {accuracy:.2f}%")
 
-        return {
-            "MAE": mae,
-            "MSE": mse,
-            "RMSE": rmse,
-            "MAPE": mape,
-            "Accuracy": accuracy
-        }
+        return {"MAE": mae, "MSE": mse, "RMSE": rmse, "MAPE": mape, "Accuracy": accuracy}
 

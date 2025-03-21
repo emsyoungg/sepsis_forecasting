@@ -2,6 +2,7 @@ import os
 import glob
 import pandas as pd
 from sktime.datatypes import convert_to
+from sktime.transformations.series.impute import Imputer
 
 
 class PatientTimeSeriesLoader:
@@ -10,9 +11,10 @@ class PatientTimeSeriesLoader:
     into a sktime-compatible multi-index DataFrame. Each patient has a df.
     """
 
-    def __init__(self, folder):
+    def __init__(self, folder, column):
         self.folder = folder
         self.file_list = self._get_sorted_file_list()
+        self.column = column if isinstance(column, list) else [column]
 
     def _get_sorted_file_list(self):
         file_list = glob.glob(os.path.join(self.folder, "*.csv"))
@@ -27,6 +29,7 @@ class PatientTimeSeriesLoader:
         """
         df_list = []
 
+
         for i, file in enumerate(self.file_list):
             df = pd.read_csv(file)
 
@@ -36,14 +39,25 @@ class PatientTimeSeriesLoader:
             df["Patient_ID"] = i
             # change missing data fill method here
             #df = df.dropna(axis=1, how='all')
+            #df = df.fillna(value=-1) ## inplace = true
+            # sktime imputer
 
             df = df.ffill().bfill()
 
-            df_list.append(df)
+
+            df_list.append(df[self.column + ["Patient_ID", "ICULOS"]])
 
         full_df = pd.concat(df_list, ignore_index=True)
         full_df.set_index(["Patient_ID", "ICULOS"], inplace=True)
-        return convert_to(full_df, to_type="pd-multiindex")
+        df_multiindex = convert_to(full_df, to_type="pd-multiindex")
+
+        df_multiindex.fillna(-1, inplace=True)
+        return df_multiindex
+        #transformer = Imputer(missing_values=-1)
+
+        #transformer.fit(df_multiindex)
+        #return transformer.transform(df_multiindex)
+
 
     def split_train_test(self, data):
         """
