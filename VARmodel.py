@@ -15,6 +15,8 @@ class VARForecaster:
         self.forecaster = VAR()
 
     def fit(self):
+        print("Unique value counts per feature:\n", self.train_data[self.features].nunique())
+
         self.forecaster.fit(self.train_data[self.features])
 
     def predict(self, steps=6):

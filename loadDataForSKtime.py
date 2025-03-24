@@ -29,7 +29,6 @@ class PatientTimeSeriesLoader:
         """
         df_list = []
 
-
         for i, file in enumerate(self.file_list):
             df = pd.read_csv(file)
 
@@ -38,14 +37,20 @@ class PatientTimeSeriesLoader:
 
             df["Patient_ID"] = i
             # change missing data fill method here
-            #df = df.dropna(axis=1, how='all')
-            #df = df.fillna(value=-1) ## inplace = true
+            # df = df.dropna(axis=1, how='all')
+            # df = df.fillna(value=-1) ## inplace = true
             # sktime imputer
 
             df = df.ffill().bfill()
 
+            constant = any(col in df.columns and df[col].nunique() == 1
+                           for col in self.column
+                           )
 
+            #if not constant:
             df_list.append(df[self.column + ["Patient_ID", "ICULOS"]])
+            #else:
+             #   print(f"Patient {i}: Dropping — constant columns found")
 
         full_df = pd.concat(df_list, ignore_index=True)
         full_df.set_index(["Patient_ID", "ICULOS"], inplace=True)
@@ -53,11 +58,10 @@ class PatientTimeSeriesLoader:
 
         df_multiindex.fillna(-1, inplace=True)
         return df_multiindex
-        #transformer = Imputer(missing_values=-1)
+        # transformer = Imputer(missing_values=-1)
 
-        #transformer.fit(df_multiindex)
-        #return transformer.transform(df_multiindex)
-
+        # transformer.fit(df_multiindex)
+        # return transformer.transform(df_multiindex)
 
     def split_train_test(self, data):
         """
