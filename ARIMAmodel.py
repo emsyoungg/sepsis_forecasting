@@ -12,8 +12,8 @@ class ARIMAForecaster:
     A class for forecasting a variable in the patients data using AutoARIMA on patient time series data.
     """
 
-    def __init__(self, variable_to_forecast, train_data, test_data, sp=12, seasonal=False, max_order=5, max_p=3,
-                 max_q=3, max_d=1):
+    def __init__(self, variable_to_forecast, train_data, test_data, seasonal=False, max_order=8, max_p=5,
+                 max_q=5, max_d=2):
         """
         Initializes the forecaster with AutoARIMA model.
 
@@ -30,7 +30,7 @@ class ARIMAForecaster:
         """
         self.train_data = train_data
         self.test_data = test_data
-        self.forecaster = AutoARIMA(sp=sp, seasonal=seasonal, suppress_warnings=True, stepwise=True,
+        self.forecaster = AutoARIMA(seasonal=seasonal, suppress_warnings=True, stepwise=True,
                                     max_order=max_order, max_p=max_p, max_q=max_q, max_d=max_d)
         self.variable_to_forecast = variable_to_forecast
 
@@ -69,11 +69,11 @@ class ARIMAForecaster:
         patient_predictions = forecasts.loc[patient_id]
         patient_data_combined = pd.concat([self.train_data, self.test_data], axis=0)
         patient_data = patient_data_combined.loc[patient_id]
-        patient_data_var = patient_data[self.variable_to_forecast]
+        #patient_data_var = patient_data[self.variable_to_forecast]
 
         plt.figure(figsize=(10, 6))
-        plt.plot(patient_data.index, patient_data_var, label=f"Actual {self.variable_to_forecast}", marker="o")
-        plt.plot(patient_predictions.index, patient_predictions, label=f"Forecasted {self.variable_to_forecast}",
+        plt.plot(patient_data.index, patient_data, label=f"Actual", marker="o")
+        plt.plot(patient_predictions.index, patient_predictions, label=f"Forecasted",
                  marker="x", linestyle="--",
                  color="orange")
         plt.xlabel("ICULOS (Time Index)")
