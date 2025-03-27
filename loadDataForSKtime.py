@@ -20,7 +20,7 @@ class PatientTimeSeriesLoader:
         file_list = glob.glob(os.path.join(self.folder, "*.csv"))
         return sorted(file_list, key=lambda x: int(os.path.basename(x).split(".")[0]))
 
-    def load_data(self):
+    def load_data(self, amount=None):
         """
         Loads multiple CSV files into a sktime-compatible multi-index DataFrame.
 
@@ -28,6 +28,9 @@ class PatientTimeSeriesLoader:
             pd.DataFrame: sktime-compatible multi-index dataframe (Patient_ID, ICULOS as time index).
         """
         df_list = []
+
+        if amount:
+            self.file_list = self.file_list[:amount]
 
         for i, file in enumerate(self.file_list):
             df = pd.read_csv(file)
@@ -58,10 +61,7 @@ class PatientTimeSeriesLoader:
 
         df_multiindex.fillna(-1, inplace=True)
         return df_multiindex
-        # transformer = Imputer(missing_values=-1)
 
-        # transformer.fit(df_multiindex)
-        # return transformer.transform(df_multiindex)
 
     def split_train_test(self, data):
         """
