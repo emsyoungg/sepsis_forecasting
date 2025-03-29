@@ -1,0 +1,1 @@
+from sktime.transformations.panel.rocket import MiniRocketMultivariate

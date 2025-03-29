@@ -29,6 +29,8 @@ class PatientTimeSeriesLoader:
         """
         df_list = []
 
+        print(type(self.column))
+
         if amount:
             self.file_list = self.file_list[:amount]
 
@@ -37,52 +39,32 @@ class PatientTimeSeriesLoader:
 
             if 'ICULOS' not in df.columns:
                 raise ValueError(f"File {file} is missing the 'ICULOS' column (time index).")
+            if not all(col in df.columns for col in self.column):
+                print(f"Patient {i}: Missing one of {self.column} — skipping.")
+                continue
+            # Drop if all values in target columns are NaN
+            if df[self.column].isna().all().all():
+                print(f"Patient {i}: All {self.column} values are NaN — skipping.")
+                continue
 
+            if df["ICULOS"].isna().any():
+                df["ICULOS"] = range(1, len(df) + 1)
+                print("ICULOS reset patient", i)
 
-            df["Patient_ID"] = i
-            # change missing data fill method here
-            # df = df.dropna(axis=1, how='all')
-            # df = df.fillna(value=-1) ## inplace = true
-            # sktime imputer
-
-            df = df.dropna(axis=1, how='all')
-
-            #df = df.ffill().bfill()
             df.fillna(-1, inplace=True)
 
-            constant = any(col in df.columns and df[col].nunique() == 1
-                           for col in self.column
-                           )
-
-            if not constant:
-                df_list.append(df[self.column + ["Patient_ID", "ICULOS"]])
-            else:
+            if df[self.column].nunique().le(1).any():
                 print(f"Patient {i}: Dropping — constant columns found")
+                continue
+
+            df["Patient_ID"] = i + 1
+            df_list.append(df[self.column + ["Patient_ID", "ICULOS"]])
 
         full_df = pd.concat(df_list, ignore_index=True)
         full_df.set_index(["Patient_ID", "ICULOS"], inplace=True)
         df_multiindex = convert_to(full_df, to_type="pd-multiindex")
 
-        df_multiindex.fillna(-1, inplace=True)
-
-        # Step 1: Count unique values per patient per target column
-        nunique_per_patient = df_multiindex.groupby(level="Patient_ID").nunique()
-
-        # Step 2: Find patients where ANY of the columns in self.column are constant (only 1 unique value)
-        patients_to_remove = nunique_per_patient[self.column].le(1).any(axis=1)
-
-        # Step 3: Get those patient IDs (as list)
-        patients_to_remove_ids = patients_to_remove[patients_to_remove].index.tolist()
-        print(patients_to_remove_ids)
-        # Step 4: Drop them from df_multiindex using MultiIndex filtering
-        mask = ~df_multiindex.index.get_level_values("Patient_ID").isin(patients_to_remove_ids)
-        df_multiindex = df_multiindex[mask]
-
-        # ✅ Final confirmation
-        print(f"✅ Removed {len(patients_to_remove_ids)} patients with constant values in {self.column}.")
-
         return df_multiindex
-
 
     def split_train_test(self, data):
         """
