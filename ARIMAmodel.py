@@ -83,20 +83,19 @@ class ARIMAForecaster:
         plt.grid(True)
         plt.show()
 
-    def evaluate_model(self, predicted_values):
-        #print(predicted_values.isna().sum())  # Shows count of NaNs per column
+    def evaluate_model(self, forecast):
 
-        actual_values = self.test_data
+        ignore_nan = self.test_data[(self.test_data != -1).all(axis=1)]
+        filtered_forecast = forecast.loc[ignore_nan.index]
 
-        #print(actual_values.isna().sum())
 
         # Calculate error metrics
-        mae = mean_absolute_error(actual_values, predicted_values)
-        mse = mean_squared_error(actual_values, predicted_values)
+        mae = mean_absolute_error(ignore_nan, filtered_forecast)
+        mse = mean_squared_error(ignore_nan, filtered_forecast)
         rmse = np.sqrt(mse)
 
         # Calculate MAPE (Mean Absolute Percentage Error) for accuracy
-        mape = np.mean(np.abs((actual_values - predicted_values) / actual_values)) * 100
+        mape = np.mean(np.abs((ignore_nan - filtered_forecast) / ignore_nan)) * 100
         accuracy = 100 - mape  # Accuracy derived from MAPE
 
         # Print results

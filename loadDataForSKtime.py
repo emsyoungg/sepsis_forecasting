@@ -2,6 +2,8 @@ import os
 import glob
 import pandas as pd
 from sktime.datatypes import convert_to
+from sktime.datatypes import check_is_mtype
+
 from sktime.transformations.series.impute import Imputer
 
 
@@ -36,15 +38,22 @@ class PatientTimeSeriesLoader:
 
         for i, file in enumerate(self.file_list):
             df = pd.read_csv(file)
+            df["Patient_ID"] = i + 1
 
             if 'ICULOS' not in df.columns:
                 raise ValueError(f"File {file} is missing the 'ICULOS' column (time index).")
+
             if not all(col in df.columns for col in self.column):
-                print(f"Patient {i}: Missing one of {self.column} — skipping.")
+                print(f"Patient {i + 1}: Missing one of {self.column} — skipping.")
                 continue
+
             # Drop if all values in target columns are NaN
             if df[self.column].isna().all().all():
-                print(f"Patient {i}: All {self.column} values are NaN — skipping.")
+                print(f"Patient {i + 1}: All {self.column} values are NaN — skipping.")
+                continue
+
+            if df["ICULOS"].nunique() < 15:
+                print(f"Patient {i + 1}: Less than 15 time points — skipping.")
                 continue
 
             if df["ICULOS"].isna().any():
@@ -54,17 +63,19 @@ class PatientTimeSeriesLoader:
             df.fillna(-1, inplace=True)
 
             if df[self.column].nunique().le(1).any():
-                print(f"Patient {i}: Dropping — constant columns found")
+                print(f"Patient {i + 1}: Dropping — constant columns found")
                 continue
 
-            df["Patient_ID"] = i + 1
             df_list.append(df[self.column + ["Patient_ID", "ICULOS"]])
 
         full_df = pd.concat(df_list, ignore_index=True)
         full_df.set_index(["Patient_ID", "ICULOS"], inplace=True)
-        df_multiindex = convert_to(full_df, to_type="pd-multiindex")
+        # Check whether it's compatible with sktime's "pd-multiindex" format
+        check_is_mtype(full_df, mtype="pd-multiindex", scitype="Panel")  # will raise if invalid
 
-        return df_multiindex
+        #df_multiindex = convert_to(full_df, to_type="pd-multiindex")
+        #check_is_mtype(df_multiindex, mtype="pd-multiindex", scitype="Panel")
+        return full_df
 
     def split_train_test(self, data):
         """
