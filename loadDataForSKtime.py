@@ -56,13 +56,11 @@ class PatientTimeSeriesLoader:
                 print(f"Patient {i + 1}: Less than 15 time points — skipping.")
                 continue
 
-            if df["ICULOS"].isna().any():
-                df["ICULOS"] = range(1, len(df) + 1)
-                print("ICULOS reset patient", i)
+            df["ICULOS"] = pd.RangeIndex(start=0, stop=(len(df)), step=1)
 
             df.fillna(-1, inplace=True)
 
-            if df[self.column].nunique().le(1).any():
+            if df[self.column].nunique().le(2).any():
                 print(f"Patient {i + 1}: Dropping — constant columns found")
                 continue
 
@@ -73,8 +71,8 @@ class PatientTimeSeriesLoader:
         # Check whether it's compatible with sktime's "pd-multiindex" format
         check_is_mtype(full_df, mtype="pd-multiindex", scitype="Panel")  # will raise if invalid
 
-        #df_multiindex = convert_to(full_df, to_type="pd-multiindex")
-        #check_is_mtype(df_multiindex, mtype="pd-multiindex", scitype="Panel")
+        # df_multiindex = convert_to(full_df, to_type="pd-multiindex")
+        # check_is_mtype(df_multiindex, mtype="pd-multiindex", scitype="Panel")
         return full_df
 
     def split_train_test(self, data):
@@ -93,15 +91,27 @@ class PatientTimeSeriesLoader:
 
         for patient_id in data.index.get_level_values("Patient_ID").unique():
             patient_df = data.loc[patient_id]
+
             split_point = patient_df.index.max() - 6
-            train_df = patient_df.loc[:split_point]
-            test_df = patient_df.loc[split_point + 1:]
+            train_df = patient_df.loc[:split_point].copy()
+            test_df = patient_df.loc[split_point + 1:].copy()
 
-            train_list.append(train_df)
-            test_list.append(test_df)
+            if train_df[self.column].nunique().le(2).any():
+                print(f"Patient {patient_id}: Dropping — constant columns found")
+                continue
 
-        train_data = pd.concat(train_list, keys=data.index.get_level_values("Patient_ID").unique())
-        test_data = pd.concat(test_list, keys=data.index.get_level_values("Patient_ID").unique())
+            train_df["Patient_ID"] = patient_id
+            train_df["ICULOS"] = train_df.index
+            test_df["Patient_ID"] = patient_id
+            test_df["ICULOS"] = test_df.index
+
+            train_list.append(train_df[self.column + ["Patient_ID", "ICULOS"]])
+            test_list.append(test_df[self.column + ["Patient_ID", "ICULOS"]])
+
+        train_data = pd.concat(train_list, ignore_index=True)
+        test_data = pd.concat(test_list, ignore_index=True)
+        train_data.set_index(["Patient_ID", "ICULOS"], inplace=True)
+        test_data.set_index(["Patient_ID", "ICULOS"], inplace=True)
 
         return train_data, test_data
 

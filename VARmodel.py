@@ -40,6 +40,6 @@ class VARForecaster:
         plt.tight_layout()
         plt.show()
 
-    def evaluate_model(self, predicted_values):
-        mae = mean_absolute_error(self.test_data, predicted_values)
+    def evaluate_model(self, test_data, predicted_values):
+        mae = mean_absolute_error(test_data, predicted_values)
         print(f"Mean Absolute Error: {mae}")
