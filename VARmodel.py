@@ -11,7 +11,7 @@ class VARForecaster:
     def __init__(self, train_data, test_data, features):
         self.train_data = train_data
         self.test_data = test_data
-        self.features = features
+        self.features = features if isinstance(features, list) else [features]
         self.forecaster = VAR()
 
     def fit(self):
@@ -21,19 +21,22 @@ class VARForecaster:
         fh = ForecastingHorizon(range(1, steps + 1), is_relative=True)
         return self.forecaster.predict(fh)
 
-    def plot_forecast(self, forecasts):
+    def plot_forecast(self, forecasts, pid):
         patient_data_combined = pd.concat([self.train_data, self.test_data], axis=0)
 
-        plt.figure(figsize=(12, 8))
-        for i, feature in enumerate(self.features):
-            actual_series = patient_data_combined[feature]
-            forecast_series = forecasts[feature]
+        plt.figure(figsize=(12, 6))
+        for feature in self.features:
+            actual_series = patient_data_combined.loc[pid, feature]
+            forecast_series = forecasts.loc[pid, feature]
 
-            plt.subplot(len(self.features), 1, i + 1)
-            plt.plot(actual_series.index, actual_series, label=f"Actual {feature}", color="blue")
-            plt.plot(forecast_series.index, forecast_series,label=f"Predicted {feature}", color="red", linestyle="--")
-            plt.title(f"{feature} Forecast (VAR Model)")
-            plt.legend()
+            plt.plot(actual_series.index, actual_series, label=f"Actual {feature}", linestyle="-", marker="o")
+            plt.plot(forecast_series.index, forecast_series, label=f"Predicted {feature}", linestyle="--", marker="x")
+
+        plt.title(f"Patient {pid} — Forecasts (VAR Model)")
+        plt.xlabel("ICULOS")
+        plt.ylabel("Value")
+        plt.legend()
+        plt.grid(True)
         plt.tight_layout()
         plt.show()
 
