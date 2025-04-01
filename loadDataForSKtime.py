@@ -58,7 +58,8 @@ class PatientTimeSeriesLoader:
 
             df["ICULOS"] = pd.RangeIndex(start=0, stop=(len(df)), step=1)
 
-            df.fillna(-1, inplace=True)
+            df.fillna(method="ffill", inplace=True)
+            df.fillna(method="bfill", inplace=True)
 
             if df[self.column].nunique().le(2).any():
                 print(f"Patient {i + 1}: Dropping — constant columns found")

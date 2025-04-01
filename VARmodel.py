@@ -1,10 +1,12 @@
+import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 from sktime.forecasting.var import VAR
 from sktime.forecasting.model_selection import temporal_train_test_split
 from sktime.forecasting.base import ForecastingHorizon
-from sktime.performance_metrics.forecasting import mean_absolute_error
-
+from sktime.performance_metrics.forecasting import mean_absolute_error, mean_squared_error
+import numpy as np
+from sktime.distances import ddtw_distance
 
 class VARForecaster:
 
@@ -40,6 +42,30 @@ class VARForecaster:
         plt.tight_layout()
         plt.show()
 
-    def evaluate_model(self, test_data, predicted_values):
-        mae = mean_absolute_error(test_data, predicted_values)
-        print(f"Mean Absolute Error: {mae}")
+    def evaluate_model(self, forecast):
+
+        ignore_nan = self.test_data[(self.test_data != -1).all(axis=1)]
+        filtered_forecast = forecast.loc[ignore_nan.index]
+
+
+        # Calculate error metrics
+        mae = mean_absolute_error(ignore_nan, filtered_forecast)
+        mse = mean_squared_error(ignore_nan, filtered_forecast)
+        rmse = np.sqrt(mse)
+
+        # Calculate MAPE (Mean Absolute Percentage Error) for accuracy
+        mape = np.mean(np.abs((ignore_nan - filtered_forecast) / ignore_nan)) * 100
+        accuracy = 100 - mape  # Accuracy derived from MAPE
+
+        # Print results
+        print(f"Model Evaluation Results:\n"
+              f"  - Mean Absolute Error (MAE): {mae:.4f}\n"
+              f"  - Mean Squared Error (MSE): {mse:.4f}\n"
+              f"  - Root Mean Squared Error (RMSE): {rmse:.4f}\n"
+              f"  - Mean Absolute Percentage Error (MAPE): {mape:.2f}%\n"
+              f"  - Forecasting Accuracy: {accuracy:.2f}%")
+
+        return {"MAE": mae, "MSE": mse, "RMSE": rmse, "MAPE": mape, "Accuracy": accuracy}
+
+    def dynamic_time_warping(self, forecast):
+        return ddtw_distance(self.test_data, forecast)
