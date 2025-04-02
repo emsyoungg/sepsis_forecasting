@@ -159,7 +159,7 @@ class PatientTimeSeriesLoader:
                 print(f"Patient {i + 1}: All {self.column} values are NaN — skipping.")
                 continue
 
-            if df["ICULOS"].nunique() < 24:
+            if df["ICULOS"].nunique() < 50:
                 print(f"Patient {i + 1}: Less than 24 time points — skipping.")
                 continue
 
@@ -170,6 +170,10 @@ class PatientTimeSeriesLoader:
             if df[self.column].nunique().le(2).any():
                 print(f"Patient {i + 1}: Dropping — constant columns found")
                 continue
+
+            # make all time series the same length
+            if df["ICULOS"].nunique() > 50:
+                df = df[:50]
 
             df["Patient_ID"] = new_patient_id
             new_patient_id += 1

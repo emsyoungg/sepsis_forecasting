@@ -14,13 +14,27 @@ class LSTMforecaster:
         self.train_data = train_data
         self.test_data = test_data
         self.features = features if isinstance(features, list) else [features]
-        self.forecaster = NeuralForecastLSTM(max_steps=10, input_size=18)
+        self.forecaster = NeuralForecastLSTM(
+            max_steps=10,
+            verbose_predict=True,
 
-    def fit(self, steps=6):
-        fh = ForecastingHorizon(range(1, steps + 1), is_relative=True)
+
+
+        )
+
+    def fit(self):
+        fh = ForecastingHorizon([44, 45, 46, 47, 48, 49], is_relative=True)
         self.forecaster.fit(self.train_data, fh=fh)
 
     def predict(self):
+        if self.forecaster.is_fitted is False:
+            raise ValueError("Model is not fitted. Please call the 'fit' method first.")
+        else:
+            print("Model is fitted. Generating forecasts...")
+        #fh = ForecastingHorizon([44, 45, 46, 47, 48, 49], is_relative=False)
+        #print("Internal fh:", self.forecaster._fh)
+        #print("Forecaster cutoff:", self.forecaster.cutoff)
+        #print("ForecastingHorizon:", fh)
         return self.forecaster.predict()
 
     def plot_forecast(self, forecasts, pid):
@@ -60,4 +74,3 @@ class LSTMforecaster:
         print(f"Mean Squared Error: {mse}")
         print(f"Root Mean Squared Error: {rmse}")
         print(f"Mean Absolute Percentage Error: {mape}")
-
