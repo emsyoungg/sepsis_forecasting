@@ -14,27 +14,25 @@ class LSTMforecaster:
         self.train_data = train_data
         self.test_data = test_data
         self.features = features if isinstance(features, list) else [features]
-        self.forecaster = NeuralForecastLSTM(
-            max_steps=10,
-            verbose_predict=True,
-
-
-
-        )
+        self.forecaster = NeuralForecastLSTM(max_steps=10)
 
     def fit(self):
-        fh = ForecastingHorizon([44, 45, 46, 47, 48, 49], is_relative=True)
-        self.forecaster.fit(self.train_data, fh=fh)
+        fh = ForecastingHorizon([44, 45, 46], is_relative=True)
+        return self.forecaster.fit(self.train_data, fh=fh)
 
     def predict(self):
+        # print(self.forecaster.cutoff())
+        # print(self.forecaster.check_is_fitted())
+        # print(self.forecaster.get_fitted_params())
         if self.forecaster.is_fitted is False:
+
             raise ValueError("Model is not fitted. Please call the 'fit' method first.")
         else:
             print("Model is fitted. Generating forecasts...")
-        #fh = ForecastingHorizon([44, 45, 46, 47, 48, 49], is_relative=False)
-        #print("Internal fh:", self.forecaster._fh)
-        #print("Forecaster cutoff:", self.forecaster.cutoff)
-        #print("ForecastingHorizon:", fh)
+        # fh = ForecastingHorizon([44, 45, 46, 47, 48, 49], is_relative=False)
+        # print("Internal fh:", self.forecaster._fh)
+        # print("Forecaster cutoff:", self.forecaster.cutoff)
+        # print("ForecastingHorizon:", fh)
         return self.forecaster.predict()
 
     def plot_forecast(self, forecasts, pid):

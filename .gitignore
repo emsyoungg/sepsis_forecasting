@@ -2,3 +2,5 @@ training_setA/
 training_setB/
 training_setA_csv/
 index.html
+lightning_logs/
+pickles/
