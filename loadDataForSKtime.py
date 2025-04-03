@@ -52,8 +52,8 @@ class PatientTimeSeriesLoader:
                 print(f"Patient {i + 1}: All {self.column} values are NaN — skipping.")
                 continue
 
-            if df["ICULOS"].nunique() < 20:
-                print(f"Patient {i + 1}: Less than 15 time points — skipping.")
+            if df["ICULOS"].nunique() < 46:
+                print(f"Patient {i + 1}: Less than 46 time points — skipping.")
                 continue
 
             df["ICULOS"] = pd.RangeIndex(start=0, stop=(len(df)), step=1)

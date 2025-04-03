@@ -21,7 +21,6 @@ class ARIMAForecaster:
             variable_to_forecast: The variable to forecast.
             train_data (pd.DataFrame): Training data in sktime-compatible format.
             test_data (pd.DataFrame): Test data in sktime-compatible format.
-            sp (int): Seasonal period.
             seasonal (bool): Whether to consider seasonality.
             max_order (int): Maximum order of ARIMA model.
             max_p (int): Maximum autoregressive order.
@@ -38,8 +37,6 @@ class ARIMAForecaster:
         """
         Fits the AutoARIMA model to the variable to forecasts data in the training dataset.
         """
-        #sktime_var = self.train_data[[self.variable_to_forecast]]
-        #print(sktime_var)
         self.forecaster.fit(self.train_data)
 
     def predict(self, steps=6):
@@ -69,7 +66,6 @@ class ARIMAForecaster:
         patient_predictions = forecasts.loc[patient_id]
         patient_data_combined = pd.concat([self.train_data, self.test_data], axis=0)
         patient_data = patient_data_combined.loc[patient_id]
-        #patient_data_var = patient_data[self.variable_to_forecast]
 
         plt.figure(figsize=(10, 6))
         plt.plot(patient_data.index, patient_data, label=f"Actual", marker="o")
@@ -84,10 +80,8 @@ class ARIMAForecaster:
         plt.show()
 
     def evaluate_model(self, forecast):
-
         ignore_nan = self.test_data[(self.test_data != -1).all(axis=1)]
         filtered_forecast = forecast.loc[ignore_nan.index]
-
 
         # Calculate error metrics
         mae = mean_absolute_error(ignore_nan, filtered_forecast)
@@ -106,5 +100,5 @@ class ARIMAForecaster:
               f"  - Mean Absolute Percentage Error (MAPE): {mape:.2f}%\n"
               f"  - Forecasting Accuracy: {accuracy:.2f}%")
 
-        return {"MAE": mae, "MSE": mse, "RMSE": rmse, "MAPE": mape, "Accuracy": accuracy}
+        return mae, mse, rmse, mape, accuracy
 
