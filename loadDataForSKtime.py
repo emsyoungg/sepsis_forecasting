@@ -159,8 +159,8 @@ class PatientTimeSeriesLoader:
                 print(f"Patient {i + 1}: All {self.column} values are NaN — skipping.")
                 continue
 
-            if df["ICULOS"].nunique() < 150:
-                print(f"Patient {i + 1}: Less than 150 time points — skipping.")
+            if df["ICULOS"].nunique() < 50:
+                print(f"Patient {i + 1}: Less than 50 time points — skipping.")
                 continue
 
             df["ICULOS"] = pd.RangeIndex(start=0, stop=(len(df)), step=1)
@@ -172,14 +172,13 @@ class PatientTimeSeriesLoader:
                 continue
 
             # make all time series the same length
-            if df["ICULOS"].nunique() > 150:
-                df = df[:150]
+            if df["ICULOS"].nunique() > 50:
+                df = df[:50]
 
             df["Patient_ID"] = new_patient_id
             new_patient_id += 1
 
             df_list.append(df[self.column + ["Patient_ID", "ICULOS"]])
-
 
         full_df = pd.concat(df_list, ignore_index=True)
         full_df.set_index(["Patient_ID", "ICULOS"], inplace=True)
@@ -231,3 +230,72 @@ class PatientTimeSeriesLoader:
         test_data.set_index(["Patient_ID", "ICULOS"], inplace=True)
 
         return train_data, test_data
+
+    def target_split(self, train_data, test_data, target, exogenous):
+
+        target_df_train = train_data[target]
+        target_df_test = test_data[target]
+
+        exogenous_df_train = train_data[exogenous]
+        exogenous_df_test = test_data[exogenous]
+
+        check_is_mtype(target_df_train, mtype="pd-multiindex", scitype="Panel")
+        check_is_mtype(target_df_test, mtype="pd-multiindex", scitype="Panel")
+        check_is_mtype(exogenous_df_train, mtype="pd-multiindex", scitype="Panel")
+        check_is_mtype(exogenous_df_test, mtype="pd-multiindex", scitype="Panel")
+
+        return target_df_train, target_df_test, exogenous_df_train, exogenous_df_test
+
+    def properly_split(self, df, target, exogenous):
+
+        y_train_list = []
+        X_train_list = []
+        y_test_list = []
+        X_test_list = []
+        new_patient_id = 0
+
+        for patient_id in df.index.get_level_values("Patient_ID").unique():
+            patient_df = df.loc[patient_id]
+
+            # Split the data into training and testing sets
+            split_point = patient_df.index.max() - 6
+            train_df = patient_df.loc[:split_point].copy()
+            test_df = patient_df.loc[split_point + 1:].copy()
+
+            # Check if the split is valid
+            if train_df.empty or test_df.empty:
+                print(f"Patient {patient_id}: Invalid split — skipping.")
+                continue
+
+            train_target_df = train_df[target]
+            test_target_df = test_df[target]
+            train_exogenous_df = train_df[exogenous]
+            test_exogenous_df = test_df[exogenous]
+
+            train_target_df["Patient_ID"] = new_patient_id
+            train_target_df["ICULOS"] = train_df.index
+            test_target_df["Patient_ID"] = new_patient_id
+            test_target_df["ICULOS"] = test_df.index
+            train_exogenous_df["Patient_ID"] = new_patient_id
+            train_exogenous_df["ICULOS"] = train_df.index
+            test_exogenous_df["Patient_ID"] = new_patient_id
+            test_exogenous_df["ICULOS"] = test_df.index
+
+            new_patient_id += 1
+
+            y_train_list.append(train_target_df[target + ["Patient_ID", "ICULOS"]])
+            X_train_list.append(train_exogenous_df[exogenous + ["Patient_ID", "ICULOS"]])
+            y_test_list.append(test_target_df[target + ["Patient_ID", "ICULOS"]])
+            X_test_list.append(test_exogenous_df[exogenous + ["Patient_ID", "ICULOS"]])
+
+        y_train = pd.concat(y_train_list, ignore_index=True)
+        X_train = pd.concat(X_train_list, ignore_index=True)
+        y_test = pd.concat(y_test_list, ignore_index=True)
+        X_test = pd.concat(X_test_list, ignore_index=True)
+
+        y_train.set_index(["Patient_ID", "ICULOS"], inplace=True)
+        y_test.set_index(["Patient_ID", "ICULOS"], inplace=True)
+        X_train.set_index(["Patient_ID", "ICULOS"], inplace=True)
+        X_test.set_index(["Patient_ID", "ICULOS"], inplace=True)
+
+        return y_train, X_train, y_test, X_test

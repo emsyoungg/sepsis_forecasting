@@ -18,6 +18,7 @@ class LSTMforecaster:
 
     def fit(self):
         fh = ForecastingHorizon([44, 45, 46], is_relative=True)
+
         return self.forecaster.fit(self.train_data, fh=fh)
 
     def predict(self):
@@ -34,6 +35,12 @@ class LSTMforecaster:
         # print("Forecaster cutoff:", self.forecaster.cutoff)
         # print("ForecastingHorizon:", fh)
         return self.forecaster.predict()
+
+    def fit_predict(self, x, y, fh):
+        """
+        Fit the model and then predict.
+        """
+        return self.forecaster.fit_predict(x, y, fh)
 
     def plot_forecast(self, forecasts, pid):
         patient_data_combined = pd.concat([self.train_data, self.test_data], axis=0)
