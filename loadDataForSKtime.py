@@ -159,8 +159,8 @@ class PatientTimeSeriesLoader:
                 print(f"Patient {i + 1}: All {self.column} values are NaN — skipping.")
                 continue
 
-            if df["ICULOS"].nunique() < 50:
-                print(f"Patient {i + 1}: Less than 50 time points — skipping.")
+            if df["ICULOS"].nunique() < 30:
+                print(f"Patient {i + 1}: Less than 30 time points — skipping.")
                 continue
 
             df["ICULOS"] = pd.RangeIndex(start=0, stop=(len(df)), step=1)
@@ -172,8 +172,8 @@ class PatientTimeSeriesLoader:
                 continue
 
             # make all time series the same length
-            if df["ICULOS"].nunique() > 50:
-                df = df[:50]
+            if df["ICULOS"].nunique() > 30:
+                df = df[:30]
 
             df["Patient_ID"] = new_patient_id
             new_patient_id += 1
@@ -231,21 +231,6 @@ class PatientTimeSeriesLoader:
 
         return train_data, test_data
 
-    def target_split(self, train_data, test_data, target, exogenous):
-
-        target_df_train = train_data[target]
-        target_df_test = test_data[target]
-
-        exogenous_df_train = train_data[exogenous]
-        exogenous_df_test = test_data[exogenous]
-
-        check_is_mtype(target_df_train, mtype="pd-multiindex", scitype="Panel")
-        check_is_mtype(target_df_test, mtype="pd-multiindex", scitype="Panel")
-        check_is_mtype(exogenous_df_train, mtype="pd-multiindex", scitype="Panel")
-        check_is_mtype(exogenous_df_test, mtype="pd-multiindex", scitype="Panel")
-
-        return target_df_train, target_df_test, exogenous_df_train, exogenous_df_test
-
     def properly_split(self, df, target, exogenous):
 
         y_train_list = []
@@ -258,13 +243,21 @@ class PatientTimeSeriesLoader:
             patient_df = df.loc[patient_id]
 
             # Split the data into training and testing sets
-            split_point = patient_df.index.max() - 6
+            split_point = patient_df.index.max() - 3
             train_df = patient_df.loc[:split_point].copy()
             test_df = patient_df.loc[split_point + 1:].copy()
 
             # Check if the split is valid
             if train_df.empty or test_df.empty:
                 print(f"Patient {patient_id}: Invalid split — skipping.")
+                continue
+
+            if train_df[target].nunique().le(2).any():
+                print(f"Patient {patient_id}: Dropping — constant columns found")
+                continue
+
+            if train_df[exogenous].nunique().le(2).any():
+                print(f"Patient {patient_id}: Dropping — constant columns found")
                 continue
 
             train_target_df = train_df[target]
@@ -284,13 +277,13 @@ class PatientTimeSeriesLoader:
             new_patient_id += 1
 
             y_train_list.append(train_target_df[target + ["Patient_ID", "ICULOS"]])
-            X_train_list.append(train_exogenous_df[exogenous + ["Patient_ID", "ICULOS"]])
             y_test_list.append(test_target_df[target + ["Patient_ID", "ICULOS"]])
+            X_train_list.append(train_exogenous_df[exogenous + ["Patient_ID", "ICULOS"]])
             X_test_list.append(test_exogenous_df[exogenous + ["Patient_ID", "ICULOS"]])
 
         y_train = pd.concat(y_train_list, ignore_index=True)
-        X_train = pd.concat(X_train_list, ignore_index=True)
         y_test = pd.concat(y_test_list, ignore_index=True)
+        X_train = pd.concat(X_train_list, ignore_index=True)
         X_test = pd.concat(X_test_list, ignore_index=True)
 
         y_train.set_index(["Patient_ID", "ICULOS"], inplace=True)
@@ -298,4 +291,24 @@ class PatientTimeSeriesLoader:
         X_train.set_index(["Patient_ID", "ICULOS"], inplace=True)
         X_test.set_index(["Patient_ID", "ICULOS"], inplace=True)
 
-        return y_train, X_train, y_test, X_test
+        return y_train, y_test, X_train, X_test
+
+    def split_by_patient(self, df):
+        # uses first 10 patients for training and last 10 for testing
+        train_list = []
+        test_list = []
+
+        for patient_id in df.index.get_level_values("Patient_ID").unique():
+            patient_df = df.loc[patient_id]
+
+            if patient_id < 10:
+                # Use first 10 patients for training
+                patient_df["Patient_ID"] = patient_id
+                train_list.append(patient_df)
+            else:
+                # Use last 10 patients for testing
+                patient_df["Patient_ID"] = patient_id
+                test_list.append(patient_df)
+
+        train_data = pd.concat(train_list, ignore_index=True)
+        test_data = pd.concat(test_list, ignore_index=True)
