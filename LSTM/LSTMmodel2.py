@@ -13,7 +13,7 @@ class LSTMforecaster2:
         self.forecaster = NeuralForecastLSTM(max_steps=10, futr_exog_list=exogenous)  # exogenous predictors
 
     def fit(self):
-        fh = ForecastingHorizon([1, 2, 3], is_relative=True)
+        fh = [1, 2, 3, 4, 5, 6]  # Forecasting horizon
         self.forecaster.fit(y=self.y_train, X=self.X_train, fh=fh)
 
     def predict(self):
@@ -21,8 +21,8 @@ class LSTMforecaster2:
             raise ValueError("Model is not fitted. Please call the 'fit' method first.")
         else:
             print("Model is fitted. Generating forecasts...")
-        return self.forecaster.predict(self.X_test)
+        return self.forecaster.predict(X=self.X_test)
 
     def fit_predict(self):
-        fh = ForecastingHorizon([1, 2, 3], is_relative=True)
-        return self.forecaster.fit_predict(y=self.y_train, X=self.X_train, fh=fh, X_pred=self.X_test)
+        #fh = ForecastingHorizon([1, 2, 3, 4, 5, 6])
+        return self.forecaster.fit_predict(y=self.y_train, X=self.X_train, X_pred=self.X_test)

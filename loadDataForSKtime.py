@@ -243,7 +243,7 @@ class PatientTimeSeriesLoader:
             patient_df = df.loc[patient_id]
 
             # Split the data into training and testing sets
-            split_point = patient_df.index.max() - 3
+            split_point = patient_df.index.max() - 6
             train_df = patient_df.loc[:split_point].copy()
             test_df = patient_df.loc[split_point + 1:].copy()
 
@@ -293,22 +293,4 @@ class PatientTimeSeriesLoader:
 
         return y_train, y_test, X_train, X_test
 
-    def split_by_patient(self, df):
-        # uses first 10 patients for training and last 10 for testing
-        train_list = []
-        test_list = []
 
-        for patient_id in df.index.get_level_values("Patient_ID").unique():
-            patient_df = df.loc[patient_id]
-
-            if patient_id < 10:
-                # Use first 10 patients for training
-                patient_df["Patient_ID"] = patient_id
-                train_list.append(patient_df)
-            else:
-                # Use last 10 patients for testing
-                patient_df["Patient_ID"] = patient_id
-                test_list.append(patient_df)
-
-        train_data = pd.concat(train_list, ignore_index=True)
-        test_data = pd.concat(test_list, ignore_index=True)

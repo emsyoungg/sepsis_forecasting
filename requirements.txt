@@ -1,4 +1,5 @@
-sktime
+sktime==0.30.1
+neuralforecast==3.0.0
 numpy==1.23.5
 pmdarima
 matplotlib==3.7.3
