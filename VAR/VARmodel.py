@@ -19,8 +19,8 @@ class VARForecaster:
     def fit(self):
         self.forecaster.fit(self.train_data)
 
-    def predict(self, steps=6):
-        fh = ForecastingHorizon(range(1, steps + 1), is_relative=True)
+    def predict(self, steps=4):
+        fh = ForecastingHorizon([1, 2, 3, 4], is_relative=True)
         return self.forecaster.predict(fh)
 
     def plot_forecast(self, forecasts, pid):
