@@ -1,10 +1,11 @@
 import pandas as pd
 from matplotlib import pyplot as plt
+from sktime.distances import ddtw_distance
 from sktime.forecasting.base import ForecastingHorizon
 from sktime.forecasting.neuralforecast import NeuralForecastLSTM
 
 
-class LSTMforecaster2:
+class LSTMforecaster:
     def __init__(self, target, y_train,  exogenous=None, y_test=None, X_train=None, X_test=None):
         self.target = target
         self.exogenous = exogenous
@@ -55,3 +56,6 @@ class LSTMforecaster2:
         plt.legend()
         plt.grid(True)
         plt.show()
+
+    def dynamic_time_warping(self, forecast):
+        return ddtw_distance(self.y_test, forecast)

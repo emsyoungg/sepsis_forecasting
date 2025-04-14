@@ -3,3 +3,4 @@ neuralforecast==3.0.0
 numpy==1.23.5
 pmdarima
 matplotlib==3.7.3
+numba==0.59.1
