@@ -13,19 +13,25 @@ class Evaluator:
         self.forecasts = forecasts
 
     def sktime_dtw(self):
+
+        feature_dtw_dict = {}
+
         for feature in self.y_pred.columns:
             dtw_list = []
             for pid in self.y_pred.index.get_level_values("Patient_ID").unique():
                 timeseries = self.y_pred.loc[pid, feature]
                 forecasted_timeseries = self.forecasts.loc[pid, feature]
 
-                x = np.array(timeseries)
-                y = np.array(forecasted_timeseries)
+                x = np.array(timeseries).reshape(-1, 1)
+                y = np.array(forecasted_timeseries).reshape(-1, 1)
 
                 dtw_val = dtw_distance(x, y)
                 dtw_list.append(dtw_val)
 
+            feature_dtw_dict[feature] = dtw_list
             print(f"Mean sktime DTW distance for feature {feature}: {np.mean(dtw_list)}")
+
+        return feature_dtw_dict
 
     def sktime_ddtw(self):
         for feature in self.y_pred.columns:
