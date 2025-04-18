@@ -1,13 +1,10 @@
 import os
 import glob
 import pandas as pd
-from sktime.datatypes import convert_to
 from sktime.datatypes import check_is_mtype
 
-from sktime.transformations.series.impute import Imputer
 
-
-class Preprocessors:
+class Loader:
     def __init__(self, folder, column):
         self.folder = folder
         self.file_list = self._get_sorted_file_list()
@@ -43,6 +40,7 @@ class Preprocessors:
             if df[self.column].nunique().le(2).any():
                 print(f"Patient {i}: Dropping — constant columns found")
                 continue
+            df["ICULOS"] = pd.RangeIndex(start=0, stop=(len(df)), step=1)
 
             df_list.append(df[self.column + ["Patient_ID", "ICULOS"]])
 
@@ -109,6 +107,7 @@ class Preprocessors:
     def split_train_test(self, data, test_size=4, X=None):
         train_list = []
         test_list = []
+        new_patient_id = 0
 
         for patient_id in data.index.get_level_values("Patient_ID").unique():
             patient_df = data.loc[patient_id]
@@ -121,10 +120,11 @@ class Preprocessors:
                 print(f"Patient {patient_id}: Dropping — constant columns found")
                 continue
 
-            train_df["Patient_ID"] = patient_id
+            train_df["Patient_ID"] = new_patient_id
             train_df["ICULOS"] = train_df.index
-            test_df["Patient_ID"] = patient_id
+            test_df["Patient_ID"] = new_patient_id
             test_df["ICULOS"] = test_df.index
+            new_patient_id += 1
 
             train_list.append(train_df[self.column + ["Patient_ID", "ICULOS"]])
             test_list.append(test_df[self.column + ["Patient_ID", "ICULOS"]])
@@ -142,4 +142,4 @@ class Preprocessors:
         X_train = train_data.drop(endogenous, axis=1)
         X_test = test_data.drop(endogenous, axis=1)
 
-        return y_train, X_train, y_test, X_test
+        return y_train, y_test, X_train, X_test

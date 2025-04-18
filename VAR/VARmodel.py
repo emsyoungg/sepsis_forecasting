@@ -42,9 +42,9 @@ class VARForecaster:
         plt.tight_layout()
         plt.show()
 
-    def evaluate_model(self, forecast):
+    def evaluate_model(self, forecast, y_train):
 
-        ignore_nan = self.test_data[(self.test_data != -1).all(axis=1)]
+        ignore_nan = y_train[(y_train != -1).all(axis=1)]
         filtered_forecast = forecast.loc[ignore_nan.index]
 
 
