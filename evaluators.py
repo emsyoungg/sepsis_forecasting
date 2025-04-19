@@ -82,3 +82,38 @@ class Evaluator:
             plt.tight_layout()
             plt.show()
 
+    def sktime_dtw_test(self):
+
+        feature_dtw_dict = {}
+
+        for feature in self.y_pred.columns:
+            dtw_list = []
+            for pid in self.y_pred.index.get_level_values("Patient_ID").unique():
+                timeseries = self.y_pred.loc[pid, feature]
+                forecasted_timeseries = self.forecasts.loc[pid, feature]
+
+                x = np.array(timeseries).reshape(-1, 1)
+                y = np.array(forecasted_timeseries).reshape(-1, 1)
+
+                dtw_val = dtw_distance(x, y)
+                dtw_list.append(dtw_val)
+
+            feature_dtw_dict[feature] = dtw_list
+            print(f"Mean sktime DTW distance for feature {feature}: {np.mean(dtw_list)}")
+
+        return feature_dtw_dict
+
+    def sktime_ddtw_test(self):
+        for feature in self.y_pred.columns:
+            dtw_list = []
+            for pid in self.y_pred.index.get_level_values("Patient_ID").unique():
+                timeseries = self.y_pred.loc[pid, feature]
+                forecasted_timeseries = self.forecasts.loc[pid, feature]
+
+                x = np.array(timeseries)
+                y = np.array(forecasted_timeseries)
+
+                dtw_val = ddtw_distance(x, y)
+                dtw_list.append(dtw_val)
+
+            print(f"Mean sktime DDTW distance for feature {feature}: {np.mean(dtw_list)}")
