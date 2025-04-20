@@ -1,4 +1,4 @@
-sktime==0.30.1
+sktime==0.31.0
 neuralforecast==3.0.0
 numpy==1.23.5
 pmdarima

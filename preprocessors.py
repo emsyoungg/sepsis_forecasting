@@ -16,12 +16,12 @@ class Loader:
 
     def ARIMA_VAR_preprocessor(self, max_patients=None, min_time_points=36):
         df_list = []
+        new_patient_id = 0
         for i, file in enumerate(self.file_list):
             if len(df_list) >= max_patients:
                 break
 
             df = pd.read_csv(file)
-            df["Patient_ID"] = i
             # Drop if any columns are missing
             if not all(col in df.columns for col in self.column):
                 print(f"Patient {i}: Missing one of {self.column} — skipping.")
@@ -41,6 +41,8 @@ class Loader:
                 print(f"Patient {i}: Dropping — constant columns found")
                 continue
             df["ICULOS"] = pd.RangeIndex(start=0, stop=(len(df)), step=1)
+            df["Patient_ID"] = new_patient_id
+            new_patient_id += 1
 
             df_list.append(df[self.column + ["Patient_ID", "ICULOS"]])
 
@@ -104,7 +106,7 @@ class Loader:
 
         return hospitalA_df
 
-    def split_train_test(self, data, test_size=4, X=None):
+    def split_train_test(self, data, test_size=4):
         train_list = []
         test_list = []
         new_patient_id = 0
@@ -136,10 +138,14 @@ class Loader:
 
         return train_data, test_data
 
-    def split_y_X(self, train_data, test_data, endogenous, exogenous):
+    def split_y_X(self, train_data, test_data, endogenous, exogenous, drop=None):
+        if drop:
+            train_data = train_data.drop(drop, axis=1)
+            test_data = test_data.drop(drop, axis=1)
         y_train = train_data.drop(exogenous, axis=1)
         y_test = test_data.drop(exogenous, axis=1)
         X_train = train_data.drop(endogenous, axis=1)
         X_test = test_data.drop(endogenous, axis=1)
 
         return y_train, y_test, X_train, X_test
+
