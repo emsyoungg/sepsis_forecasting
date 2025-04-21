@@ -31,6 +31,7 @@ class Loader:
             if instance_df["ICULOS"].nunique() < min_time_points:
                 continue
             if instance_df[self.column].nunique().le(10).any():
+                print(f"Patient {i}: Dropping — constant columns found")
                 continue
 
             instance_df["ICULOS"] = pd.RangeIndex(start=0, stop=(len(instance_df)), step=1)
@@ -39,6 +40,7 @@ class Loader:
 
             instance_df["Patient_ID"] = new_patient_id
             new_patient_id += 1
+
             df_list.append(instance_df[self.column + ["Patient_ID", "ICULOS"]])
 
         panel_df = pd.concat(df_list, ignore_index=True)
@@ -88,10 +90,12 @@ class Loader:
             split_point = patient_df.index.max() - fh
             train_df = patient_df.loc[:split_point].copy()
             test_df = patient_df.loc[split_point + 1:].copy()
-
             if train_df[self.column].nunique().le(2).any():
                 print(f"Warning - Patient {patient_id}: Dropping — constant columns found")
                 continue
+            #if test_df[self.column].nunique().le(2).any():
+             #   print(f"Warning - Patient {patient_id}: Dropping — constant columns found")
+              #  continue
 
             train_df["Patient_ID"] = new_patient_id
             train_df["ICULOS"] = train_df.index
@@ -121,98 +125,17 @@ class Loader:
         return y_train, y_test, X_train, X_test
 
     def split_by_instance(self, panel_df):
-        # Get unique patient IDs
+
         patient_ids = panel_df.index.get_level_values(0).unique()
-        train_ids = patient_ids[:80]
-        test_ids = patient_ids[80:]
+        split_idx = int(0.9 * len(patient_ids))
+
+        train_ids = patient_ids[:split_idx]
+        test_ids = patient_ids[split_idx:]
+
         train_data = panel_df.loc[train_ids]
         test_data = panel_df.loc[test_ids]
 
         return train_data, test_data
-
-
-
-
-    def ARIMA_VAR_preprocessor(self, max_patients=None, min_time_points=36):
-        df_list = []
-        new_patient_id = 0
-        for i, file in enumerate(self.file_list):
-            if len(df_list) >= max_patients:
-                break
-
-            df = pd.read_csv(file)
-            # Drop if any columns are missing
-            if not all(col in df.columns for col in self.column):
-                print(f"Patient {i}: Missing one of {self.column} — skipping.")
-                continue
-            # Drop if all values in target columns are NaN
-            if df[self.column].isna().all().all():
-                print(f"Patient {i}: All {self.column} values are NaN — skipping.")
-                continue
-            if df["ICULOS"].nunique() < min_time_points:
-                print(f"Patient {i}: Less than {min_time_points} time points — skipping.")
-                continue
-
-            df = df.ffill().bfill()
-
-            # Drop if there are constant columns
-            if df[self.column].nunique().le(2).any():
-                print(f"Patient {i}: Dropping — constant columns found")
-                continue
-            df["ICULOS"] = pd.RangeIndex(start=0, stop=(len(df)), step=1)
-            df["Patient_ID"] = new_patient_id
-            new_patient_id += 1
-
-            df_list.append(df[self.column + ["Patient_ID", "ICULOS"]])
-
-        full_df = pd.concat(df_list, ignore_index=True)
-        full_df.set_index(["Patient_ID", "ICULOS"], inplace=True)
-        # Check whether it's compatible with sktime's "pd-multiindex" format
-        check_is_mtype(full_df, mtype="pd-multiindex", scitype="Panel")
-        return full_df
-
-    def LSTM_preprocessor(self, max_patients=None, min_time_points=30):
-        df_list = []
-        new_patient_id = 0
-
-        for i, file in enumerate(self.file_list):
-            if len(df_list) >= max_patients:
-                break
-
-            df = pd.read_csv(file)
-
-            if not all(col in df.columns for col in self.column):
-                print(f"Patient {i + 1}: Missing one of {self.column} — skipping.")
-                continue
-            # Drop if all values in target columns are NaN
-            if df[self.column].isna().all().all():
-                print(f"Patient {i + 1}: All {self.column} values are NaN — skipping.")
-                continue
-            if df["ICULOS"].nunique() < min_time_points:
-                print(f"Patient {i + 1}: Less than 30 time points — skipping.")
-                continue
-
-            df["ICULOS"] = pd.RangeIndex(start=0, stop=(len(df)), step=1)
-
-            if df[self.column].nunique().le(2).any():
-                print(f"Patient {i + 1}: Dropping — constant columns found")
-                continue
-            # make all time series the same length
-            if df["ICULOS"].nunique() > min_time_points:
-                df = df[:min_time_points]
-
-            df["Patient_ID"] = new_patient_id
-            new_patient_id += 1
-
-            df_list.append(df[self.column + ["Patient_ID", "ICULOS"]])
-
-        full_df = pd.concat(df_list, ignore_index=True)
-        full_df.set_index(["Patient_ID", "ICULOS"], inplace=True)
-        # Check whether it's compatible with sktime's "pd-multiindex" format
-        check_is_mtype(full_df, mtype="pd-multiindex", scitype="Panel")  # will raise if invalid
-
-        return full_df
-
 
 
 
