@@ -5,7 +5,7 @@ from sktime.datatypes import check_is_mtype
 
 
 class Loader:
-    def __init__(self, folder, column):
+    def __init__(self, folder, column=None):
         self.folder = folder
         self.file_list = self._get_sorted_file_list()
         self.column = column if isinstance(column, list) else [column]
@@ -31,7 +31,6 @@ class Loader:
             if instance_df["ICULOS"].nunique() < min_time_points:
                 continue
             if instance_df[self.column].nunique().le(2).any():
-                print(f"Patient {i}: Dropping — constant columns found")
                 continue
 
             instance_df["ICULOS"] = pd.RangeIndex(start=0, stop=(len(instance_df)), step=1)
@@ -68,14 +67,14 @@ class Loader:
         return panel_df
 
     def get_flat_df(self):
-        df_list = [
-            pd.read_csv(file, sep="|").assign(Patient_ID=i)
-            for i, file in enumerate(self.file_list)
-        ]
+        df_list = []
+        for i, file in enumerate(self.file_list):
+            df = pd.read_csv(file)
+            df["Patient_ID"] = i
+            df_list.append(df)
+
         hospitalA_df = pd.concat(df_list, ignore_index=True)
         hospitalA_df = hospitalA_df.sort_values(by=["Patient_ID", "ICULOS"]).reset_index(drop=True)
-
-        hospitalA_df = hospitalA_df.ffill().bfill()
 
         return hospitalA_df
 

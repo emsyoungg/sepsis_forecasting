@@ -2,7 +2,6 @@ import pandas as pd
 from matplotlib import pyplot as plt
 from sktime.distances import dtw_distance
 from sktime.distances import ddtw_distance
-from tslearn.metrics import dtw
 import numpy as np
 import plotly.graph_objs as go
 from plotly.subplots import make_subplots
@@ -56,16 +55,7 @@ class Evaluator:
 
             print(f"Mean sktime DDTW distance for feature {feature}: {np.mean(dtw_list)}")
 
-    def tslearn_dtw(self):
-        distances = []
 
-        for pid in self.y_pred.index.get_level_values("Patient_ID").unique():
-            true = self.y_pred.loc[pid]
-            pred = self.forecasts.loc[pid]
-            dist = dtw(true, pred)
-            distances.append((pid, dist))
-
-        print("Mean tslearn DTW distance:", np.mean([d[1] for d in distances]))
 
     def plot_multivar(self, num_graphs=4):
         patient_data_combined = pd.concat([self.y_train, self.y_pred], axis=0)
@@ -91,7 +81,7 @@ class Evaluator:
             plt.show()
 
 
-    def box_plot_dtw(self, feature_dtw_dict):
+    def box_plot_dtw_interactive(self, feature_dtw_dict):
         num_features = len(feature_dtw_dict)
         fig = make_subplots(
             rows=1,
@@ -124,5 +114,23 @@ class Evaluator:
         )
 
         fig.show()
+
+    def box_plot_dtw(self, feature_dtw_dict):
+        num_features = len(feature_dtw_dict)
+        fig, axs = plt.subplots(1, num_features, figsize=(5 * num_features, 6), constrained_layout=True)
+
+        if num_features == 1:
+            axs = [axs]
+
+        for ax, (feature, data) in zip(axs, feature_dtw_dict.items()):
+            dtw_list = data["dtw"]
+            ax.boxplot(dtw_list)
+            ax.set_title(f"Boxplot of DTW distances\nfor {feature}")
+            ax.set_ylabel("DTW Distance")
+            ax.set_xlabel("Patients")
+            ax.grid(True)
+
+        plt.show()
+
 
 
