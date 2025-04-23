@@ -4,6 +4,8 @@ from sktime.distances import dtw_distance
 from sktime.distances import ddtw_distance
 from tslearn.metrics import dtw
 import numpy as np
+import plotly.graph_objs as go
+from plotly.subplots import make_subplots
 
 class Evaluator:
 
@@ -13,11 +15,12 @@ class Evaluator:
         self.forecasts = forecasts
 
     def sktime_dtw(self):
-
         feature_dtw_dict = {}
 
         for feature in self.y_pred.columns:
             dtw_list = []
+            patient_ids = []
+
             for pid in self.y_pred.index.get_level_values("Patient_ID").unique():
                 timeseries = self.y_pred.loc[pid, feature]
                 forecasted_timeseries = self.forecasts.loc[pid, feature]
@@ -27,9 +30,14 @@ class Evaluator:
 
                 dtw_val = dtw_distance(x, y)
                 dtw_list.append(dtw_val)
+                patient_ids.append(pid)
 
-            feature_dtw_dict[feature] = dtw_list
-            print(f"Mean sktime DTW distance for feature {feature}: {np.mean(dtw_list)}")
+            feature_dtw_dict[feature] = {
+                "dtw": dtw_list,
+                "patient_ids": patient_ids
+            }
+
+            print(f"Median sktime DTW distance for feature {feature}: {np.median(dtw_list)}")
 
         return feature_dtw_dict
 
@@ -82,38 +90,39 @@ class Evaluator:
             plt.tight_layout()
             plt.show()
 
-    def sktime_dtw_test(self):
 
-        feature_dtw_dict = {}
+    def box_plot_dtw(self, feature_dtw_dict):
+        num_features = len(feature_dtw_dict)
+        fig = make_subplots(
+            rows=1,
+            cols=num_features,
+            subplot_titles=list(feature_dtw_dict.keys())
+        )
 
-        for feature in self.y_pred.columns:
-            dtw_list = []
-            for pid in self.y_pred.index.get_level_values("Patient_ID").unique():
-                timeseries = self.y_pred.loc[pid, feature]
-                forecasted_timeseries = self.forecasts.loc[pid, feature]
+        for i, (feature, data) in enumerate(feature_dtw_dict.items(), start=1):
+            dtw_vals = data["dtw"]
+            patient_ids = data["patient_ids"]
 
-                x = np.array(timeseries).reshape(-1, 1)
-                y = np.array(forecasted_timeseries).reshape(-1, 1)
+            fig.add_trace(
+                go.Box(
+                    y=dtw_vals,
+                    text=[f"Patient ID: {pid}" for pid in patient_ids],
+                    hovertemplate="%{text}<br>DTW: %{y:.3f}",
+                    name=feature,
+                    boxpoints="all",  # shows all the points
+                    jitter=0.5,
+                    pointpos=-1.8
+                ),
+                row=1, col=i
+            )
 
-                dtw_val = dtw_distance(x, y)
-                dtw_list.append(dtw_val)
+        fig.update_layout(
+            height=600,
+            width=300 * num_features,
+            title_text="DTW Distance Boxplots with Patient IDs",
+            showlegend=False
+        )
 
-            feature_dtw_dict[feature] = dtw_list
-            print(f"Mean sktime DTW distance for feature {feature}: {np.mean(dtw_list)}")
+        fig.show()
 
-        return feature_dtw_dict
 
-    def sktime_ddtw_test(self):
-        for feature in self.y_pred.columns:
-            dtw_list = []
-            for pid in self.y_pred.index.get_level_values("Patient_ID").unique():
-                timeseries = self.y_pred.loc[pid, feature]
-                forecasted_timeseries = self.forecasts.loc[pid, feature]
-
-                x = np.array(timeseries)
-                y = np.array(forecasted_timeseries)
-
-                dtw_val = ddtw_distance(x, y)
-                dtw_list.append(dtw_val)
-
-            print(f"Mean sktime DDTW distance for feature {feature}: {np.mean(dtw_list)}")

@@ -30,7 +30,7 @@ class Loader:
                 continue
             if instance_df["ICULOS"].nunique() < min_time_points:
                 continue
-            if instance_df[self.column].nunique().le(10).any():
+            if instance_df[self.column].nunique().le(2).any():
                 print(f"Patient {i}: Dropping — constant columns found")
                 continue
 
