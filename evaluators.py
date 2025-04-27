@@ -117,18 +117,25 @@ class Evaluator:
 
     def box_plot_dtw(self, feature_dtw_dict):
         num_features = len(feature_dtw_dict)
-        fig, axs = plt.subplots(1, num_features, figsize=(5 * num_features, 6), constrained_layout=True)
+        fig, axs = plt.subplots(1, num_features, figsize=(2 * num_features, 5), constrained_layout=True)
 
         if num_features == 1:
             axs = [axs]
 
         for ax, (feature, data) in zip(axs, feature_dtw_dict.items()):
             dtw_list = data["dtw"]
-            ax.boxplot(dtw_list)
-            ax.set_title(f"Boxplot of DTW distances\nfor {feature}")
-            ax.set_ylabel("DTW Distance")
+            ax.boxplot(
+                dtw_list,
+                widths=0.5,  # <--- makes boxplots thinner
+                boxprops=dict(linewidth=1),
+                whiskerprops=dict(linewidth=1),
+                capprops=dict(linewidth=1),
+                medianprops=dict(linewidth=1.5, color="firebrick")
+            )
+            ax.set_title(f"DTW distances\nfor {feature}")
             ax.set_xlabel("Patients")
             ax.grid(True)
+        axs[0].set_ylabel("DTW Distance")
 
         plt.show()
 
