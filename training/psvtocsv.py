@@ -4,11 +4,6 @@ import pandas as pd
 
 class PSVToCSV:
     def __init__(self, input_dir, output_dir):
-        """
-        Initialises the converter with input and output directories.
-        :param input_dir: Path to the directory containing .psv files.
-        :param output_dir: Path to the directory where converted .csv files will be saved.
-        """
         self.input_dir = input_dir
         self.output_dir = output_dir
         os.makedirs(self.output_dir, exist_ok=True)  # Ensure output directory exists
@@ -26,11 +21,6 @@ class PSVToCSV:
         print(f"Conversion completed. CSV files are stored in: {self.output_dir}")
 
     def convert_file(self, filename, index):
-        """
-        Converts a single .psv file to a .csv file.
-        :param filename: Name of the .psv file.
-        :param index: Sequential number for naming the output .csv file.
-        """
         file_path = os.path.join(self.input_dir, filename)
         df = pd.read_csv(file_path, sep='|')  # Read PSV file
         output_file_path = os.path.join(self.output_dir, f"{index}.csv")  # Sequential filename
